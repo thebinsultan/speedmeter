@@ -27,6 +27,17 @@ public class AdapterSelectorTests
     }
 
     [Fact]
+    public void SameType_PrefersMoreTraffic()
+    {
+        var list = new List<NetworkAdapterInfo>
+        {
+            Adapter("idle", "Ethernet", bytes: 10),
+            Adapter("busy", "Ethernet", bytes: 10_000)
+        };
+        Assert.Equal("busy", AdapterSelector.SelectBest(list)?.Id);
+    }
+
+    [Fact]
     public void ReturnsNullWhenNoneUp()
     {
         var list = new List<NetworkAdapterInfo> { Adapter("a", "Ethernet", up: false) };
@@ -34,10 +45,24 @@ public class AdapterSelectorTests
     }
 
     [Fact]
-    public void FindById_Works()
+    public void ReturnsNullForEmptyList()
     {
-        var list = new List<NetworkAdapterInfo> { Adapter("x", "Ethernet") };
-        Assert.Equal("x", AdapterSelector.FindById(list, "x")?.Id);
+        Assert.Null(AdapterSelector.SelectBest(Array.Empty<NetworkAdapterInfo>()));
+    }
+
+    [Fact]
+    public void FindById_IsCaseInsensitive_AndHandlesMissing()
+    {
+        var list = new List<NetworkAdapterInfo> { Adapter("ABC", "Ethernet") };
+        Assert.Equal("ABC", AdapterSelector.FindById(list, "abc")?.Id);
         Assert.Null(AdapterSelector.FindById(list, "missing"));
+        Assert.Null(AdapterSelector.FindById(list, null));
+    }
+
+    [Fact]
+    public void DisplayName_FallsBackToDescription()
+    {
+        var adapter = new NetworkAdapterInfo { Name = "", Description = "Intel Ethernet" };
+        Assert.Equal("Intel Ethernet", adapter.DisplayName);
     }
 }

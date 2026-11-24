@@ -5,21 +5,33 @@ namespace NetSpeedMonitor;
 
 /// <summary>
 /// Borderless, taskbar-aligned overlay. Windows 11's taskbar is XAML-hosted and
-/// cannot be injected into, so this reliable overlay visually matches the taskbar.
+/// cannot be injected into, so this overlay visually matches the taskbar instead.
+/// It is a normal top-level window (WS_EX_NOACTIVATE | TOOLWINDOW) — no code is
+/// injected into Explorer and no system files are touched.
+///
+/// The window is sized once from placeholder strings ("888.8 MB/s") so changing
+/// numbers never resize or jitter the overlay.
 /// </summary>
 public sealed class TaskbarOverlayForm : Form
 {
     private const int WM_DISPLAYCHANGE = 0x007E;
     private const int WM_DPICHANGED = 0x02E0;
+    private const int WM_SETTINGCHANGE = 0x001A;
+
+    private const string DownTemplate = "\u2193 888.8 MB/s";
+    private const string UpTemplate = "\u2191 888.8 MB/s";
 
     [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     private static extern int RegisterWindowMessage(string lpString);
 
-    private string _downloadText = "↓ 0 B/s";
-    private string _uploadText = "↑ 0 B/s";
+    private string _downloadText = "\u2193 0.00 B/s";
+    private string _uploadText = "\u2191 0.00 B/s";
     private AppSettings _settings;
-    private int _taskbarCreatedMessage;
+    private readonly int _taskbarCreatedMessage;
+    private readonly Font _defaultFont;
+    private Font _customFont;
     private bool _dragging;
+    private bool _dragMoved;
     private Point _dragStart;
     private Point _formStart;
 
@@ -34,16 +46,20 @@ public sealed class TaskbarOverlayForm : Form
         ShowIcon = false;
         TopMost = true;
         StartPosition = FormStartPosition.Manual;
+        AutoScaleMode = AutoScaleMode.Dpi;
         DoubleBuffered = true;
         _taskbarCreatedMessage = RegisterWindowMessage("TaskbarCreated");
+        _defaultFont = Font;
+        _customFont = Font;
+
         ApplySettings(settings);
+
         MouseDown += OnMouseDown;
         MouseMove += OnMouseMove;
-        MouseUp += (_, _) => _dragging = false;
+        MouseUp += OnMouseUp;
         MouseClick += (_, e) =>
         {
-            if (e.Button == MouseButtons.Left && !_dragging)
-                OverlayClicked?.Invoke();
+            if (e.Button == MouseButtons.Left && !_dragMoved) OverlayClicked?.Invoke();
         };
     }
 
@@ -60,9 +76,13 @@ public sealed class TaskbarOverlayForm : Form
 
     protected override void WndProc(ref Message m)
     {
-        if (m.Msg == _taskbarCreatedMessage || m.Msg == WM_DISPLAYCHANGE || m.Msg == WM_DPICHANGED)
+        if (m.Msg == _taskbarCreatedMessage || m.Msg == WM_DISPLAYCHANGE ||
+            m.Msg == WM_DPICHANGED || m.Msg == WM_SETTINGCHANGE)
         {
-            BeginInvoke(new Action(Reposition));
+            if (IsHandleCreated)
+            {
+                try { BeginInvoke(new Action(RefreshLayout)); } catch { /* shutting down */ }
+            }
         }
         base.WndProc(ref m);
     }
@@ -70,37 +90,54 @@ public sealed class TaskbarOverlayForm : Form
     public void ApplySettings(AppSettings settings)
     {
         _settings = settings;
-        bool dark = ThemeHelper.IsDarkMode(settings.Theme);
         BackColor = ThemeHelper.Background(settings.Theme);
         Opacity = 1.0 - (settings.BackgroundTransparency / 100.0);
-        try
-        {
-            Font = new Font(settings.FontFamily, settings.FontSize, FontStyle.Regular);
-        }
-        catch { Font = new Font("Segoe UI", 9f); }
-        // Size to content: two lines or one line.
-        try
-        {
-            using var g = CreateGraphics();
-            var downSize = g.MeasureString(_downloadText, Font);
-            var upSize = g.MeasureString(_uploadText, Font);
-            if (settings.LayoutVertical)
-                Size = new Size((int)Math.Ceiling(Math.Max(downSize.Width, upSize.Width)) + 8,
-                                (int)Math.Ceiling(downSize.Height + upSize.Height) + 2);
-            else
-                Size = new Size((int)Math.Ceiling(downSize.Width + upSize.Width) + 12,
-                                (int)Math.Ceiling(Math.Max(downSize.Height, upSize.Height)) + 2);
-        }
-        catch { Size = settings.LayoutVertical ? new Size(110, 32) : new Size(200, 18); }
-        Reposition();
-        Invalidate();
+
+        Font resolved;
+        try { resolved = new Font(settings.FontFamily, settings.FontSize, FontStyle.Regular, GraphicsUnit.Point); }
+        catch { resolved = (Font)_defaultFont.Clone(); }
+
+        var previous = _customFont;
+        _customFont = resolved;
+        Font = resolved;
+        if (!ReferenceEquals(previous, _defaultFont) && !ReferenceEquals(previous, resolved))
+            previous.Dispose();
+
+        RefreshLayout();
     }
 
     public void SetSpeeds(double downloadBps, double uploadBps)
     {
-        _downloadText = "↓ " + UnitFormatter.FormatSpeed(downloadBps, _settings.UseBitsPerSecond);
-        _uploadText = "↑ " + UnitFormatter.FormatSpeed(uploadBps, _settings.UseBitsPerSecond);
+        string down = "\u2193 " + UnitFormatter.FormatSpeed(downloadBps, _settings.UseBitsPerSecond);
+        string up = "\u2191 " + UnitFormatter.FormatSpeed(uploadBps, _settings.UseBitsPerSecond);
+        if (down == _downloadText && up == _uploadText) return;
+        _downloadText = down;
+        _uploadText = up;
         Invalidate();
+    }
+
+    public void RefreshLayout()
+    {
+        FitWithTemplates();
+        Reposition();
+        Invalidate();
+    }
+
+    private void FitWithTemplates()
+    {
+        try
+        {
+            var downSize = TextRenderer.MeasureText(DownTemplate, Font);
+            var upSize = TextRenderer.MeasureText(UpTemplate, Font);
+            Size size = _settings.LayoutVertical
+                ? new Size(Math.Max(downSize.Width, upSize.Width) + 8, downSize.Height + upSize.Height - 2)
+                : new Size(downSize.Width + upSize.Width + 12, Math.Max(downSize.Height, upSize.Height));
+
+            if (size.Width < 24) size.Width = 24;
+            if (size.Height < 16) size.Height = 16;
+            if (Size != size) Size = size;
+        }
+        catch { /* keep current size */ }
     }
 
     public void Reposition()
@@ -116,27 +153,31 @@ public sealed class TaskbarOverlayForm : Form
         g.Clear(BackColor);
         var downColor = ThemeHelper.ParseColor(_settings.DownloadColor, Color.LimeGreen);
         var upColor = ThemeHelper.ParseColor(_settings.UploadColor, Color.DodgerBlue);
-        using var downBrush = new SolidBrush(downColor);
-        using var upBrush = new SolidBrush(upColor);
-        using var fgBrush = new SolidBrush(ThemeHelper.Foreground(_settings.Theme));
+        const TextFormatFlags Flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
+
         if (_settings.LayoutVertical)
         {
-            g.DrawString(_downloadText, Font, downBrush, 4, 0);
-            g.DrawString(_uploadText, Font, upBrush, 4, Font.GetHeight(g) - 1);
+            int lineHeight = Font.Height;
+            var downRect = new Rectangle(4, 0, Width - 8, lineHeight + 2);
+            var upRect = new Rectangle(4, lineHeight - 1, Width - 8, lineHeight + 2);
+            TextRenderer.DrawText(g, _downloadText, Font, downRect, downColor, Flags);
+            TextRenderer.DrawText(g, _uploadText, Font, upRect, upColor, Flags);
         }
         else
         {
-            g.DrawString(_downloadText, Font, downBrush, 4, 2);
-            var w = g.MeasureString(_downloadText, Font).Width;
-            g.DrawString(_uploadText, Font, upBrush, 4 + w + 8, 2);
+            var downRect = new Rectangle(4, 0, Width - 8, Height);
+            TextRenderer.DrawText(g, _downloadText, Font, downRect, downColor, Flags);
+            int w = TextRenderer.MeasureText(g, _downloadText, Font).Width;
+            var upRect = new Rectangle(4 + w + 8, 0, Width - 8, Height);
+            TextRenderer.DrawText(g, _uploadText, Font, upRect, upColor, Flags);
         }
-        _ = fgBrush;
     }
 
     private void OnMouseDown(object? sender, MouseEventArgs e)
     {
         if (e.Button != MouseButtons.Left) return;
         _dragging = true;
+        _dragMoved = false;
         _dragStart = Cursor.Position;
         _formStart = Location;
     }
@@ -144,12 +185,24 @@ public sealed class TaskbarOverlayForm : Form
     private void OnMouseMove(object? sender, MouseEventArgs e)
     {
         if (!_dragging) return;
-        var dx = Cursor.Position.X - _dragStart.X;
-        var dy = Cursor.Position.Y - _dragStart.Y;
-        if (Math.Abs(dx) + Math.Abs(dy) > 4)
-        {
-            Location = new Point(_formStart.X + dx, _formStart.Y + dy);
-            OverlayMoved?.Invoke(Location.X, Location.Y);
-        }
+        int dx = Cursor.Position.X - _dragStart.X;
+        int dy = Cursor.Position.Y - _dragStart.Y;
+        if (Math.Abs(dx) + Math.Abs(dy) <= 4) return;
+        _dragMoved = true;
+        Location = new Point(_formStart.X + dx, _formStart.Y + dy);
+    }
+
+    /// <summary>Position is reported once, on release, so the offset is saved once per drag.</summary>
+    private void OnMouseUp(object? sender, MouseEventArgs e)
+    {
+        if (!_dragging) return;
+        _dragging = false;
+        if (_dragMoved) OverlayMoved?.Invoke(Location.X, Location.Y);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing && !ReferenceEquals(_customFont, _defaultFont)) _customFont.Dispose();
     }
 }

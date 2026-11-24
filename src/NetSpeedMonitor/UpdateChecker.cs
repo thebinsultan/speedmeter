@@ -9,6 +9,11 @@ public static class UpdateChecker
     private const string LatestReleaseUrl =
         "https://api.github.com/repos/thebinsultan/NetSpeed-Monitor/releases/latest";
 
+    private const string CurrentVersion = "1.0.0";
+
+    /// <summary>Link shown to the user when a newer release exists.</summary>
+    public const string ReleasesPage = "https://github.com/thebinsultan/NetSpeed-Monitor/releases";
+
     public static async Task<string?> CheckForUpdateAsync(CancellationToken ct = default)
     {
         try
@@ -18,11 +23,11 @@ public static class UpdateChecker
             using var doc = await http.GetFromJsonAsync<JsonDocument>(LatestReleaseUrl, ct);
             if (doc is null) return null;
             if (!doc.RootElement.TryGetProperty("tag_name", out var tag)) return null;
-            string latest = tag.GetString()?.TrimStart('v') ?? string.Empty;
-            var current = Application.ProductVersion ?? "1.0.0";
-            return Version.TryParse(latest, out var lv) && Version.TryParse(current, out var cv) && lv > cv
-                ? latest
-                : null;
+            string latest = tag.GetString()?.TrimStart('v', 'V') ?? string.Empty;
+            string current = Application.ProductVersion ?? CurrentVersion;
+            if (!Version.TryParse(latest, out var latestVersion)) return null;
+            if (!Version.TryParse(current, out var currentVersion)) currentVersion = new Version(1, 0, 0, 0);
+            return latestVersion.CompareTo(currentVersion) > 0 ? latest : null;
         }
         catch { return null; }
     }

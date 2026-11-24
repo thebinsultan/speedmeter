@@ -1,8 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <!-- Shared settings only. Never put Sdk/TargetFramework here: a Directory.Build.props
+       is imported by every project and must not re-import the SDK. -->
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>12</LangVersion>
+    <Deterministic>true</Deterministic>
   </PropertyGroup>
 </Project>

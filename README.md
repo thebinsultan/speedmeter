@@ -1,5 +1,10 @@
 # NetSpeed Monitor
 
+> **Release status:** source complete and pushed; **v1.0.0 is not released yet**.
+> GitHub Actions is currently blocked on this account ("account locked due to a
+> billing issue"), so the build/test/release pipeline has not produced binaries.
+> See [docs/CI_STATUS.md](docs/CI_STATUS.md). No binaries are claimed until CI passes.
+
 A lightweight, native Windows utility that shows **real-time download and upload speeds directly on the Windows taskbar** — no Electron, no telemetry, no admin rights, works offline.
 
 ```
@@ -20,9 +25,12 @@ A lightweight, native Windows utility that shows **real-time download and upload
 
 ## Download
 
-See [Releases](../../releases) for:
-- `NetSpeedMonitor-portable-win-x64.zip` / `win-arm64` — portable, no install needed.
-- `NetSpeedMonitor-Setup-1.0.0.exe` — installer (optional "Start with Windows").
+Releases are published from tags by the `Release` workflow. Until the first
+green build exists, build from source (below) — see [docs/CI_STATUS.md](docs/CI_STATUS.md).
+
+Planned assets per release:
+- `NetSpeedMonitor-portable-win-x64.zip` / `-win-arm64.zip` — portable, no install needed.
+- `NetSpeedMonitor-Setup-<version>.exe` — installer (optional "Start with Windows" task).
 
 ## Usage
 

@@ -43,7 +43,7 @@ jobs:
         run: |
           Compress-Archive -Path publish/win-x64/NetSpeedMonitor.exe -DestinationPath NetSpeedMonitor-portable-win-x64.zip
           Compress-Archive -Path publish/win-arm64/NetSpeedMonitor.exe -DestinationPath NetSpeedMonitor-portable-win-arm64.zip
-          Get-ChildItem Output/*.exe, *.zip | Format-Table Name, Length
+          Get-ChildItem installer/Output/*.exe, *.zip | Format-Table Name, Length
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -51,5 +51,5 @@ jobs:
           files: |
             NetSpeedMonitor-portable-win-x64.zip
             NetSpeedMonitor-portable-win-arm64.zip
-            Output/NetSpeedMonitor-Setup-*.exe
+            installer/Output/NetSpeedMonitor-Setup-*.exe
           generate_release_notes: true

@@ -2,10 +2,9 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>12</LangVersion>
-    <UseWinForms>true</UseWinForms>
     <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
     <AssemblyName>NetSpeedMonitor</AssemblyName>
     <RootNamespace>NetSpeedMonitor</RootNamespace>
@@ -22,13 +21,14 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\NetSpeedMonitor.Core\NetSpeedMonitor.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\icon.ico" />
-    <None Include="Resources\icon.png" />
-    <None Include="Resources\icon.svg" />
+    <!-- icon.ico is also picked up by the default None glob; adding it as an
+         EmbeddResource lets the tray load it without relying on the app folder. -->
+    <EmbeddedResource Include="Resources\icon.ico" LogicalName="NetSpeedMonitor.Resources.icon.ico" />
   </ItemGroup>
 </Project>

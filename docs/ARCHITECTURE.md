@@ -53,11 +53,26 @@ TaskbarOverlayForm (paint)  +  UsageTracker.Record(delta)  →  usage.json (ever
 - Corrupt/missing files fall back to defaults.
 
 ## Resilience
-- Single-instance named mutex (`Global\NetSpeedMonitor_SingleInstance`).
-- Counter resets, adapter changes, sleep/hibernate: next poll recomputes from
-  fresh counters; negative deltas clamped to 0.
-- Explorer restart: `TaskbarCreated` message triggers reposition.
-- All polling wrapped in try/catch — the tray loop never crashes the app.
+- Single-instance named mutex (`Global\NetSpeedMonitor_SingleInstance`), with
+  `AbandonedMutexException` handled so a crashed previous instance cannot block start-up.
+- Counter resets / adapter restarts: negative deltas are clamped to 0, so the
+  overlay shows 0 B/s for one interval instead of a nonsense spike.
+- Sleep / hibernation: if more than 10 s elapse between polls the calculator is
+  re-based (`SpeedCalculator.Reset()`), preventing a bogus "average since resume"
+  figure and excluding the slept interval from usage totals.
+- Explorer restart: `TaskbarCreated` (registered window message) plus
+  `WM_DISPLAYCHANGE` / `WM_DPICHANGED` / `WM_SETTINGCHANGE` trigger a re-measure
+  and re-position, so the overlay survives a taskbar rebuild, resolution change,
+  DPI change or theme switch.
+- Taskbar geometry uses `SHAppBarMessage(ABM_GETTASKBARPOS)` with a
+  `Shell_TrayWnd` fallback, and `TrayNotifyWnd` to find the free space before the
+  notification area — the overlay never covers clock or tray icons.
+- The overlay is sized from a worst-case template (`888.8 MB/s`) once, so updates
+  never resize or jitter it (no per-tick layout work).
+- All polling is wrapped in try/catch — a transient adapter or permission error
+  can never crash the tray loop.
+- Unhandled start-up errors are appended to `%LocalAppData%\NetSpeedMonitor\error.log`
+  and surfaced in a dialog rather than failing silently.
 
 ## Security / Privacy
 - Runs asInvoker (no admin), no telemetry/analytics/ads, no network calls

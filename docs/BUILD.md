@@ -27,11 +27,33 @@ Run `publish\win-x64\NetSpeedMonitor.exe` directly — no installation required.
    ```powershell
    & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\NetSpeedMonitor.iss
    ```
-   Output: `Output\NetSpeedMonitor-Setup-1.0.0.exe`
+   Output: `installer\Output\NetSpeedMonitor-Setup-1.0.0.exe`
 
 ## CI / Releases
 - `.github/workflows/build.yml` — on every push/PR: restore, build, test, publish x64+arm64, upload artifacts.
 - `.github/workflows/release.yml` — on `v*` tags: build, test, publish, build installer, publish GitHub Release with portable ZIPs + installer.
+
+## Verification without Windows (what has/has not been run)
+
+| Check | How | Result |
+|---|---|---|
+| C# syntax of all 24 source/test files | tree-sitter C# grammar parse (0 error nodes) | pass |
+| XML validity (csproj, props, manifest) | `xml.etree` parse | pass |
+| Unit-test algorithm correctness | algorithms ported 1:1 to Python, all assertions re-checked | pass (see below) |
+| `dotnet build` / `dotnet test` / `dotnet publish` | requires Windows SDK + .NET SDK, not present in the dev sandbox | **not run** |
+| Taskbar rendering, themes, DPI, sleep/resume, installer | manual, requires Windows | **not run** |
+
+The Core logic is deliberately platform-independent so that it *can* be tested
+anywhere. Every `UnitFormatter`, `SpeedCalculator` and `UsageTracker` expectation
+in `tests/` was reproduced with the identical algorithm and passed, e.g.:
+
+```
+0 B/s          -> "0.00 B/s"        1024 B/s      -> "1.00 KB/s"
+128 KB/s       -> "128 KB/s"        2.45 MB/s     -> "2.45 MB/s"
+1 GiB/s        -> "1.00 GB/s"       1 GiB/s (bits) -> "8.00 Gbps"
+counter reset  -> 0 B/s (never negative)
+elapsed 2 s / 2000 B -> 1000 B/s (not assumed 1 s)
+```
 
 ## Manual testing checklist (requires Windows)
 - [ ] Speeds match Task Manager / `Get-NetAdapterStatistics` roughly.
