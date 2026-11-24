@@ -15,6 +15,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     private StatisticsForm? _statsForm;
     private SpeedSample _lastSample = new();
     private Icon? _trayIcon;
+    private bool _ownsTrayIcon;
     private int _saveCounter;
     private bool _trayDisposed;
     private bool _startupHidden;
@@ -32,8 +33,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         _startupItem = new ToolStripMenuItem("Start with Windows", null, (_, _) => ToggleStartup())
         { Checked = settings.StartWithWindows, CheckOnClick = false };
 
-        _trayIcon = LoadIcon();
-        _tray.Icon = _trayIcon;
+        _tray.Icon = LoadIcon();
         _tray.Text = "NetSpeed Monitor";
         _tray.ContextMenuStrip = BuildMenu();
         _tray.Visible = true;
@@ -49,22 +49,38 @@ public sealed class TrayApplicationContext : ApplicationContext
         Tick();
     }
 
-    private static Icon LoadIcon()
+    /// <summary>Own embedded icon first, then a side-by-side icon.ico, then the system default.</summary>
+    private Icon LoadIcon()
     {
         try
         {
             using var stream = typeof(TrayApplicationContext).Assembly
                 .GetManifestResourceStream("NetSpeedMonitor.Resources.icon.ico");
-            if (stream is not null) return new Icon(stream);
+            if (stream is not null)
+            {
+                using var source = new Icon(stream);
+                _trayIcon = (Icon)source.Clone(); // clone so the stream can be disposed
+                _ownsTrayIcon = true;
+                return _trayIcon;
+            }
         }
         catch { /* fall through */ }
+
         try
         {
             string path = Path.Combine(AppContext.BaseDirectory, "icon.ico");
-            if (File.Exists(path)) return new Icon(path);
+            if (File.Exists(path))
+            {
+                _trayIcon = new Icon(path);
+                _ownsTrayIcon = true;
+                return _trayIcon;
+            }
         }
         catch { /* fall through */ }
-        return SystemIcons.Application;
+
+        _trayIcon = SystemIcons.Application;
+        _ownsTrayIcon = false; // shared system icon: never dispose
+        return _trayIcon;
     }
 
     private ContextMenuStrip BuildMenu()
@@ -231,8 +247,9 @@ public sealed class TrayApplicationContext : ApplicationContext
             {
                 _timer.Stop();
                 _tray.Visible = false;
+                _tray.Icon = null;
                 _tray.Dispose();
-                _trayIcon?.Dispose();
+                if (_ownsTrayIcon) _trayIcon?.Dispose();
                 _overlay.Close();
                 _overlay.Dispose();
                 _statsForm?.Close();
