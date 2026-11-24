@@ -1,0 +1,10 @@
+<Project>
+  <!-- Shared settings only. Never put Sdk/TargetFramework here: a Directory.Build.props
+       is imported by every project and must not re-import the SDK. -->
+  <PropertyGroup>
+    <LangVersion>12</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+</Project>

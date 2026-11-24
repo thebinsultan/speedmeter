@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- DPI awareness lives here (and not in app.manifest) per WFAC010.
+         ApplicationConfiguration.Initialize() applies it at start-up. -->
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationVisualStyles>true</ApplicationVisualStyles>
+    <ApplicationUseCompatibleTextRendering>false</ApplicationUseCompatibleTextRendering>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
+    <AssemblyName>NetSpeedMonitor</AssemblyName>
+    <RootNamespace>NetSpeedMonitor</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Product>NetSpeed Monitor</Product>
+    <Description>Lightweight Windows taskbar network speed monitor</Description>
+    <Company>NetSpeed Monitor Contributors</Company>
+    <Copyright>Copyright (c) 2026 NetSpeed Monitor Contributors</Copyright>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NetSpeedMonitor.Core\NetSpeedMonitor.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- icon.ico is also picked up by the default None glob; adding it as an
+         EmbeddResource lets the tray load it without relying on the app folder. -->
+    <EmbeddedResource Include="Resources\icon.ico" LogicalName="NetSpeedMonitor.Resources.icon.ico" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,46 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore NetSpeedMonitor.sln
+
+      - name: Build
+        run: dotnet build NetSpeedMonitor.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test NetSpeedMonitor.sln -c Release --no-build --collect:"XPlat Code Coverage"
+
+      - name: Publish portable (win-x64)
+        run: dotnet publish src/NetSpeedMonitor/NetSpeedMonitor.csproj -c Release -r win-x64 --self-contained true -o publish/win-x64 /p:PublishSingleFile=true
+
+      - name: Publish portable (win-arm64)
+        run: dotnet publish src/NetSpeedMonitor/NetSpeedMonitor.csproj -c Release -r win-arm64 --self-contained true -o publish/win-arm64 /p:PublishSingleFile=true
+
+      - name: Upload portable x64
+        uses: actions/upload-artifact@v4
+        with:
+          name: NetSpeedMonitor-portable-win-x64
+          path: publish/win-x64/NetSpeedMonitor.exe
+
+      - name: Upload portable arm64
+        uses: actions/upload-artifact@v4
+        with:
+          name: NetSpeedMonitor-portable-win-arm64
+          path: publish/win-arm64/NetSpeedMonitor.exe
