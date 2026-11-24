@@ -66,9 +66,35 @@ installer/                  Inno Setup script
 
 ## Testing
 
-Automated xUnit tests cover speed calculation, unit conversion, adapter selection, usage aggregation, and settings persistence — run in CI on every push.
+Automated xUnit tests cover speed calculation (including counter reset and
+elapsed-time handling), unit conversion, adapter selection, usage aggregation and
+settings persistence. They run via `dotnet test` and are wired into the
+**Build and Test** workflow (`dotnet test` + coverage collector) on every push and PR.
 
-> **Note:** UI/taskbar behavior (positioning, themes, Explorer restart) requires manual testing on Windows — see the checklist in [docs/BUILD.md](docs/BUILD.md). CI validates compilation and all Core logic.
+> **Status:** those workflow runs are currently blocked before the first step by
+> an account-level Actions lock (see [docs/CI_STATUS.md](docs/CI_STATUS.md)), so no
+> CI test result exists yet. Syntax of every file, project XML validity and the
+> Core algorithms have been verified independently — see
+> [docs/BUILD.md](docs/BUILD.md#verification-without-windows-what-has-has-not-been-run).
+
+UI/taskbar behaviour (positioning, themes, DPI, Explorer restart, installer) needs
+manual testing on Windows — checklist in [docs/BUILD.md](docs/BUILD.md).
+
+## Known limitations
+
+- Windows 11 centres taskbar icons; the overlay is positioned in the free space
+  immediately left of the notification area, so it never covers tray icons.
+  On a very crowded taskbar it can overlap app buttons — drag it, or use the
+  offset settings.
+- The overlay is a topmost window over the taskbar, not a hosted taskbar element
+  (Win11's taskbar is XAML and cannot be extended without injection). Full-screen
+  exclusive apps may draw over it; windows in "always on top" mode can cover it.
+- Windows 11's "secondary taskbar" per monitor is not tracked; the overlay follows
+  the primary taskbar.
+- Only the explicitly selected adapter is measured in manual mode (VPN/virtual
+  adapters show zero unless selected).
+- Usage history keeps 62 days of daily buckets (enough for week + month views).
+- ARM64 builds are produced but have not been run on ARM64 hardware here.
 
 ## License
 
