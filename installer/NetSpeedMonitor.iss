@@ -23,7 +23,8 @@ VersionInfoCompany={#AppPublisher}
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
-LicenseFile=..\LICENSE
+; Regenerated from ..\LICENSE by the Release workflow (Inno needs a .txt/.rtf license).
+LicenseFile=LICENSE.txt
 OutputDir=Output
 OutputBaseFilename=NetSpeedMonitor-Setup-{#AppVersion}
 SetupIconFile=..\src\NetSpeedMonitor\Resources\icon.ico

@@ -33,6 +33,9 @@ jobs:
       - name: Publish portable (win-arm64)
         run: dotnet publish src/NetSpeedMonitor/NetSpeedMonitor.csproj -c Release -r win-arm64 --self-contained true -o publish/win-arm64 /p:PublishSingleFile=true
 
+      - name: Prepare installer inputs
+        run: Copy-Item -Path LICENSE -Destination installer/LICENSE.txt -Force
+
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress
 
@@ -41,7 +44,7 @@ jobs:
 
       - name: Package release assets
         run: |
-          Compress-Archive -Path publish/win-x64/NetSpeedMonitor.exe -DestinationPath NetSpeedMonitor-portable-win-x64.zip
+          Compress-Archive -Path publish/win-x64/NetSpeedMonitor.exe -DestinationPath NetSpeedMonitor-portable-win-x64.zip -Force
           Compress-Archive -Path publish/win-arm64/NetSpeedMonitor.exe -DestinationPath NetSpeedMonitor-portable-win-arm64.zip
           Get-ChildItem installer/Output/*.exe, *.zip | Format-Table Name, Length
 

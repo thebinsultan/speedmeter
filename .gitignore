@@ -11,3 +11,4 @@ coverage*.xml
 coverage*.json
 *.zip
 *.msi
+installer/LICENSE.txt
