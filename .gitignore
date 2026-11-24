@@ -1,0 +1,13 @@
+bin/
+obj/
+publish/
+Output/
+*.user
+*.suo
+.vs/
+TestResults/
+*.trx
+coverage*.xml
+coverage*.json
+*.zip
+*.msi
