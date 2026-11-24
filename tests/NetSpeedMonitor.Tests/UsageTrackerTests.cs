@@ -46,8 +46,8 @@ public class UsageTrackerTests
         var today = new DateOnly(2026, 3, 1);
         tracker.Record(10, 10, 0d, 0d, today.AddDays(-90));
         tracker.Record(20, 20, 0d, 0d, today);
-        Assert.Equal(1, tracker.Daily.Count);
-        Assert.Equal(today, DateOnly.Parse(tracker.Daily.Keys.First()));
+        string onlyKey = Assert.Single(tracker.Daily).Key;
+        Assert.Equal(today, DateOnly.Parse(onlyKey));
     }
 
     [Fact]

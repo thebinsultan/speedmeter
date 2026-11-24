@@ -26,7 +26,7 @@ public static class StartupHelper
             if (enabled)
                 key.SetValue(ValueName, $"\"{Application.ExecutablePath}\"");
             else
-                key.DeleteValue(ValueName, throwIfMissing: false);
+                key.DeleteValue(ValueName, throwOnMissingValue: false);
         }
         catch { /* best effort */ }
     }
