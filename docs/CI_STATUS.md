@@ -1,68 +1,53 @@
-# Build / CI Status (updated 2026-11-24)
+# Build / CI Status — final
 
-## Summary
+_Last updated 2026-11-24, after the v1.0.0 release._
 
-| Item | Status |
-|---|---|
-| Source code | Complete (24 C# files, ~2,200 lines incl. tests/docs) |
-| GitHub repository | Code pushed to `thebinsultan/speedmeter` (see note below) |
-| GitHub Actions build/test | **Blocked by GitHub account billing lock** — job never starts |
-| `dotnet build` / `dotnet test` locally | **Not possible** — sandbox is Linux without .NET SDK |
-| v1.0.0 tag / GitHub Release | **Not created** (only after a green build, per requirements) |
-| Portable exe / installer artifacts | **None produced** |
+## Result: green
 
-## Evidence (Actions)
-
-Three workflow runs were triggered on PR #1; every one shows the same annotation
-on the `build` job, after ~2–3 seconds:
-
-> "The job was not started because your account is locked due to a billing issue."
-
-Runs: 45353040882, 45353117969, 45354043181. No step ever executed, so no
-compiler output exists for these runs — this is an account-level Actions block,
-not a build failure caused by the code.
-
-## What has actually been verified
-
-| Check | Method | Result |
+| Pipeline | Run | Result |
 |---|---|---|
-| Syntax of all C# files (app, Core, tests) | tree-sitter C# grammar, full AST walk for `ERROR`/`MISSING` nodes | 0 errors |
-| Project/manifest XML | `xml.etree` parse of all 3 csproj, `Directory.Build.props`, `app.manifest` | valid |
-| Core algorithms vs. the unit tests | unit-test expectations re-derived with a 1:1 Python port of `UnitFormatter`, `SpeedCalculator`, `UsageTracker` | all pass |
-| Type/API correctness | manual review; four real defects found and fixed (`UseWinForms` → `UseWindowsForms`, SDK re-import in `Directory.Build.props`, `Version` `>` operator, `FontFamily` ambiguity) | fixed, unverified by a compiler |
+| Build and Test (PR #1, `4a8f617`) | 45357085151 | ✅ success — restore, build, test, publish x64 + arm64, upload artifacts |
+| Build and Test (`main`, merge `5de2b72`) | 45357322447 | ✅ success |
+| Build and Test (`main`, `6462a3b`) | 45357650566 | ✅ success |
+| Release (`v1.0.0`) | 45357925152 | ✅ success — build, test, publish, installer, GitHub Release |
 
-## Not verified (needs Windows + a working .NET SDK)
+Earlier failing runs, for the record:
 
-`dotnet restore/build/test/publish`, actual win-x64 and win-arm64 binaries,
-installer compilation, taskbar positioning, light/dark theme, DPI scaling,
-sleep/resume, Explorer restart, install/uninstall, RAM/CPU targets.
+| Run | Failure | Fix |
+|---|---|---|
+| 45353040882 … 45354252544 | `The job was not started because your account is locked due to a billing issue.` (account-level Actions block) | resolved by account owner |
+| 45354252544 | `CS1739: The best overload for 'DeleteValue' does not have a parameter named 'throwIfMissing'` + xUnit2013 + WFAC010 warnings | `throwOnMissingValue`, `Assert.Single`, DPI moved from `app.manifest` to `<ApplicationHighDpiMode>PerMonitorV2</...>` |
+| 45357335713 | Inno Setup `ISCC` exit code 1 (output not captured by the hosted runner) | multi-size `icon.ico` (256/128/64/48/32/24/16), removed 3-part `VersionInfoVersion`, ISCC output now mirrored into `::error` annotations |
 
-A manual checklist is at the end of [BUILD.md](BUILD.md).
+## Build output
 
-## To produce v1.0.0
+- Build configuration: `Release`, `windows-latest`, .NET SDK 8.x.
+- Compile errors: **0**. Compiler/analyzer code warnings: **0** (the only remaining
+  annotation is GitHub's `Node.js 20 is deprecated` notice for the action versions).
+- Tests: `dotnet test --collect:"XPlat Code Coverage"` — **45 test cases** across
+  `SpeedCalculatorTests` (8), `UnitFormatterTests` (16), `AdapterSelectorTests` (7),
+  `UsageTrackerTests` (5), `SettingsStoreTests` (9). All pass.
+- Publishing: `PublishSingleFile` self-contained `win-x64` and `win-arm64`.
 
-1. Resolve the GitHub billing lock (or make Actions available for the account).
-2. Re-run **Build and Test** on PR #1 — it restores, builds, tests, publishes
-   x64 + arm64 portable exes and uploads them as artifacts.
-3. Merge PR #1 into `main`.
-4. Push tag `v1.0.0` — the **Release** workflow re-builds, compiles the Inno Setup
-   installer with `installer/NetSpeedMonitor.iss`, and publishes a GitHub Release
-   with `NetSpeedMonitor-portable-win-x64.zip`, `...-win-arm64.zip` and
-   `NetSpeedMonitor-Setup-1.0.0.exe`.
+## Released assets (v1.0.0)
 
-Only after step 4 do the release/download links from the README become real.
+| Asset | Size |
+|---|---|
+| `NetSpeedMonitor-portable-win-x64.zip` | 62,602,871 bytes |
+| `NetSpeedMonitor-portable-win-arm64.zip` | 57,977,862 bytes |
+| `NetSpeedMonitor-Setup-1.0.0.exe` | 47,493,037 bytes |
 
-## Repository naming note
+## Still requires manual verification on Windows
 
-The connected GitHub token can create commits and pull requests but is **not
-permitted to create repositories** (`POST /user/repos` → `403 Resource not
-accessible by integration`), so `thebinsultan/NetSpeed-Monitor` could not be
-created. The complete code therefore lives on a branch in the existing
-`thebinsultan/speedmeter` repository. To get the requested name, either:
+Taskbar placement/visuals on Win10 and Win11 (bottom/top/left/right, DPI 150 %,
+light/dark), sleep/resume, Explorer restart, install/uninstall, and the
+< 30 MB RAM / < 0.5 % CPU targets. Checklist: [BUILD.md](BUILD.md).
 
-- rename `speedmeter` → `NetSpeed-Monitor` in *Settings → General → Repository name*, or
-- create an empty `NetSpeed-Monitor` repo and push this branch's commits to `main`.
+## Repository naming
 
-The code, workflows, installer paths and the update-checker URL
-(`api.github.com/repos/thebinsultan/NetSpeed-Monitor/releases/latest`) already
-assume the final name, so no source changes are required after renaming.
+The connected GitHub token can commit but cannot create repositories
+(`POST /user/repos` → `403`), so the project lives in
+`thebinsultan/speedmeter`. Renaming that repository to `NetSpeed-Monitor` in
+*Settings → General* requires no code changes: the workflows, installer paths and
+the update checker (`api.github.com/repos/thebinsultan/NetSpeed-Monitor/releases/latest`)
+already use the final name.

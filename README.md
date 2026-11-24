@@ -1,9 +1,8 @@
 # NetSpeed Monitor
 
-> **Release status:** source complete and pushed; **v1.0.0 is not released yet**.
-> GitHub Actions is currently blocked on this account ("account locked due to a
-> billing issue"), so the build/test/release pipeline has not produced binaries.
-> See [docs/CI_STATUS.md](docs/CI_STATUS.md). No binaries are claimed until CI passes.
+> **Status:** v1.0.0 released — built and tested by GitHub Actions on
+> windows-latest (.NET 8). Portable x64/ARM64 and an installer are attached to the
+> release; see [docs/CI_STATUS.md](docs/CI_STATUS.md) for the build/test report.
 
 A lightweight, native Windows utility that shows **real-time download and upload speeds directly on the Windows taskbar** — no Electron, no telemetry, no admin rights, works offline.
 
@@ -25,12 +24,16 @@ A lightweight, native Windows utility that shows **real-time download and upload
 
 ## Download
 
-Releases are published from tags by the `Release` workflow. Until the first
-green build exists, build from source (below) — see [docs/CI_STATUS.md](docs/CI_STATUS.md).
+| Asset | Link |
+|---|---|
+| Portable (Windows x64, self-contained) | [NetSpeedMonitor-portable-win-x64.zip](https://github.com/thebinsultan/speedmeter/releases/download/v1.0.0/NetSpeedMonitor-portable-win-x64.zip) |
+| Portable (Windows ARM64, self-contained) | [NetSpeedMonitor-portable-win-arm64.zip](https://github.com/thebinsultan/speedmeter/releases/download/v1.0.0/NetSpeedMonitor-portable-win-arm64.zip) |
+| Installer (per-user, no admin) | [NetSpeedMonitor-Setup-1.0.0.exe](https://github.com/thebinsultan/speedmeter/releases/download/v1.0.0/NetSpeedMonitor-Setup-1.0.0.exe) |
 
-Planned assets per release:
-- `NetSpeedMonitor-portable-win-x64.zip` / `-win-arm64.zip` — portable, no install needed.
-- `NetSpeedMonitor-Setup-<version>.exe` — installer (optional "Start with Windows" task).
+All releases: [Releases page](https://github.com/thebinsultan/speedmeter/releases).
+Unzip the portable build anywhere and run `NetSpeedMonitor.exe`; no .NET runtime
+install is required. The installer adds Start-menu/desktop shortcuts and an
+optional "Start with Windows" task.
 
 ## Usage
 
@@ -66,19 +69,19 @@ installer/                  Inno Setup script
 
 ## Testing
 
-Automated xUnit tests cover speed calculation (including counter reset and
-elapsed-time handling), unit conversion, adapter selection, usage aggregation and
-settings persistence. They run via `dotnet test` and are wired into the
-**Build and Test** workflow (`dotnet test` + coverage collector) on every push and PR.
+`dotnet test` runs 45 xUnit cases covering speed calculation (counter reset,
+elapsed-time handling), unit conversion (B/s → TB/s and bits/s), adapter
+selection/preference, usage aggregation (peaks, week/month, 62-day prune) and
+settings persistence (round-trip, normalization, corrupt-file recovery).
+GitHub Actions runs them on every push and PR, and again in the Release pipeline.
 
-> **Status:** those workflow runs are currently blocked before the first step by
-> an account-level Actions lock (see [docs/CI_STATUS.md](docs/CI_STATUS.md)), so no
-> CI test result exists yet. Syntax of every file, project XML validity and the
-> Core algorithms have been verified independently — see
-> [docs/BUILD.md](docs/BUILD.md#verification-without-windows-what-has-has-not-been-run).
-
-UI/taskbar behaviour (positioning, themes, DPI, Explorer restart, installer) needs
-manual testing on Windows — checklist in [docs/BUILD.md](docs/BUILD.md).
+> **Verified in CI:** compile (0 errors, 0 code warnings), all 45 tests, both
+> self-contained publishes, installer compilation and asset upload — see
+> [docs/CI_STATUS.md](docs/CI_STATUS.md).
+>
+> **Not verified automatically:** taskbar rendering/positioning, light/dark theme,
+> DPI scaling, sleep/resume, Explorer restart and install/uninstall need a manual
+> pass on Windows — checklist in [docs/BUILD.md](docs/BUILD.md).
 
 ## Known limitations
 

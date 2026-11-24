@@ -26,3 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Counter-reset handling (adapter restart no longer yields negative speeds).
 - Corrupt settings/usage files fall back to defaults instead of crashing.
+- Sleep/hibernate gaps longer than 10 s re-base the counter instead of averaging
+  across the suspended interval.
+- `StartupHelper` used a non-existent `DeleteValue` parameter name (CS1739).
+- DPI awareness is configured via `<ApplicationHighDpiMode>PerMonitorV2</...>`
+  instead of `app.manifest` (WFAC010); per-monitor v2 behaviour is unchanged.
+- Installer icon is a full 16–256 px multi-size ICO so Inno Setup accepts it.

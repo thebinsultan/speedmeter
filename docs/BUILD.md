@@ -40,7 +40,7 @@ Run `publish\win-x64\NetSpeedMonitor.exe` directly — no installation required.
 | C# syntax of all 24 source/test files | tree-sitter C# grammar parse (0 error nodes) | pass |
 | XML validity (csproj, props, manifest) | `xml.etree` parse | pass |
 | Unit-test algorithm correctness | algorithms ported 1:1 to Python, all assertions re-checked | pass (see below) |
-| `dotnet build` / `dotnet test` / `dotnet publish` | requires Windows SDK + .NET SDK, not present in the dev sandbox | **not run** |
+| `dotnet build` / `dotnet test` / `dotnet publish` | GitHub Actions, windows-latest | **pass** (run 45357650566) |
 | Taskbar rendering, themes, DPI, sleep/resume, installer | manual, requires Windows | **not run** |
 
 The Core logic is deliberately platform-independent so that it *can* be tested
@@ -54,6 +54,12 @@ in `tests/` was reproduced with the identical algorithm and passed, e.g.:
 counter reset  -> 0 B/s (never negative)
 elapsed 2 s / 2000 B -> 1000 B/s (not assumed 1 s)
 ```
+
+## CI results for v1.0.0
+
+- Build and Test: run 45357085151 (PR #1) and 45357650566 (`main`) — success.
+- Release: run 45357925152 (tag `v1.0.0`) — success, 3 assets published.
+- Tests: 45 xUnit cases, all passing; 0 compiler errors and 0 code warnings.
 
 ## Manual testing checklist (requires Windows)
 - [ ] Speeds match Task Manager / `Get-NetAdapterStatistics` roughly.
