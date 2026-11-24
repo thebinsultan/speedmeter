@@ -17,7 +17,6 @@ AppPublisher={#AppPublisher}
 AppPublisherURL=https://github.com/thebinsultan/NetSpeed-Monitor
 AppSupportURL=https://github.com/thebinsultan/NetSpeed-Monitor/issues
 AppUpdatesURL=https://github.com/thebinsultan/NetSpeed-Monitor/releases
-VersionInfoVersion={#AppVersion}
 VersionInfoProductName={#AppName}
 VersionInfoCompany={#AppPublisher}
 DefaultDirName={autopf}\{#AppName}
